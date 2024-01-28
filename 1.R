@@ -318,5 +318,6 @@ merged_df[,mean(price), by = stars][order(-stars)]
 #or 
 merged_df[,mean(price), by = stars][order(stars, decreasing = TRUE)]
 
-
-
+ls()
+# To clean the environment
+rm(list = ls())

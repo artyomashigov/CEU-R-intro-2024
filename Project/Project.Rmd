@@ -1,0 +1,58 @@
+---
+title: "Analysis of Stolen Vehicles in New Zealand"
+author: "artyomashigov"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Introduction
+
+This report presents an analysis of data on motor vehicle thefts from the New Zealand Police Department's vehicle of interest database. The dataset covers a period of six months and each record represents a single stolen vehicle.
+
+## Step 1: Data Description
+
+The dataset includes information about stolen vehicles, such as the type of vehicle, make, model year, color, the date it was stolen, and the region from which it was stolen. The analysis aims to answer several key questions:
+
+- What day of the week are vehicles most often and least often stolen?
+- What types of vehicles are most and least often stolen, and does this vary by region?
+- What is the average age of the vehicles that are stolen, and does this vary based on vehicle type?
+- Which regions have the most and least number of stolen vehicles, and what are the characteristics of these regions?
+
+### Dataset Composition
+
+The primary dataset `stolen_vehicles.csv` contains the following columns:
+
+- `vehicle_id`: A unique identifier for each vehicle.
+- `vehicle_type`: The type of the vehicle.
+- `make_id`: An identifier for the make of the vehicle.
+- `model_year`: The year of the vehicle model.
+- `vehicle_desc`: A description of the vehicle.
+- `color`: The color of the vehicle.
+- `date_stolen`: The date when the vehicle was stolen.
+- `location_id`: An identifier for the location where the vehicle was stolen.
+
+Additional datasets include `locations.csv` and `make_details.csv`, which provide further details about the regions and vehicle makes, respectively.
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

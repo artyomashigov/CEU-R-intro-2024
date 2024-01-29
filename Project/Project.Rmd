@@ -16,14 +16,8 @@ This report presents an analysis of data on motor vehicle thefts from the New Ze
 
 ## Step 1: Data Description
 
-The dataset includes information about stolen vehicles, such as the type of vehicle, make, model year, color, the date it was stolen, and the region from which it was stolen. The analysis aims to answer several key questions:
+The dataset includes information about stolen vehicles, such as the type of vehicle, make, model year, color, the date it was stolen, and the region from which it was stolen.
 
-- What day of the week are vehicles most often and least often stolen?
-- What types of vehicles are most and least often stolen, and does this vary by region?
-- What is the average age of the vehicles that are stolen, and does this vary based on vehicle type?
-- Which regions have the most and least number of stolen vehicles, and what are the characteristics of these regions?
-
-### Dataset Composition
 
 The primary dataset `stolen_vehicles.csv` contains the following columns:
 
@@ -37,6 +31,51 @@ The primary dataset `stolen_vehicles.csv` contains the following columns:
 - `location_id`: An identifier for the location where the vehicle was stolen.
 
 Additional datasets include `locations.csv` and `make_details.csv`, which provide further details about the regions and vehicle makes, respectively.
+
+The analysis aims to answer several key questions:
+
+- What days of the week see the highest and lowest rates of vehicle theft?
+- Which vehicle types are most and least frequently stolen? Does this vary by region?
+- What is the percentage of stolen Luxury cars?
+- What is the average age of the stolen vehicles, and does it vary based on the vehicle type?
+- What is the number of thefts for different density levels?
+- Which regions experience the most and least number of stolen vehicles? 
+
+## Step 2: Data Loading
+
+````{r loading datasets}
+# import packages
+library(data.table)
+
+
+# import data, we use fread to get a data.table
+locations = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/locations.csv')
+locations
+
+str(locations)
+````
+We can notice that we have 16 different locations in our data. We have 5 columns: 3 text type, one numerical and one integer.
+We can notice that population is text type. So we are going to change the type of the variable.
+
+````{r make_details}
+#import make details
+make_details = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/make_details.csv')
+make_details
+
+stolen_vehicles = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/stolen_vehicles.csv')
+stolen_vehicles
+````
+
+## Step 3: Data transformation and loading
+
+
+## Step 4: Exploratory Data Analysis
+
+
+## Step 5: Visualizations
+
+
+
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.

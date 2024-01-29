@@ -358,8 +358,6 @@ Zealand</h1>
 </div>
 
 
-<div id="analysis-of-stolen-vehicles-in-new-zealand" class="section level1">
-<h1>Analysis of Stolen Vehicles in New Zealand</h1>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <p>This report presents an analysis of data on motor vehicle thefts from
@@ -371,20 +369,7 @@ single stolen vehicle.</p>
 <h2>Step 1: Data Description</h2>
 <p>The dataset includes information about stolen vehicles, such as the
 type of vehicle, make, model year, color, the date it was stolen, and
-the region from which it was stolen. The analysis aims to answer several
-key questions:</p>
-<ul>
-<li>What day of the week are vehicles most often and least often
-stolen?</li>
-<li>What types of vehicles are most and least often stolen, and does
-this vary by region?</li>
-<li>What is the average age of the vehicles that are stolen, and does
-this vary based on vehicle type?</li>
-<li>Which regions have the most and least number of stolen vehicles, and
-what are the characteristics of these regions?</li>
-</ul>
-<div id="dataset-composition" class="section level3">
-<h3>Dataset Composition</h3>
+the region from which it was stolen.</p>
 <p>The primary dataset <code>stolen_vehicles.csv</code> contains the
 following columns:</p>
 <ul>
@@ -401,7 +386,112 @@ vehicle was stolen.</li>
 </ul>
 <p>Additional datasets include <code>locations.csv</code> and
 <code>make_details.csv</code>, which provide further details about the
-regions and vehicle makes, respectively. ## R Markdown</p>
+regions and vehicle makes, respectively.</p>
+<p>The analysis aims to answer several key questions:</p>
+<ul>
+<li>What days of the week see the highest and lowest rates of vehicle
+theft?</li>
+<li>Which vehicle types are most and least frequently stolen? Does this
+vary by region?</li>
+<li>What is the percentage of stolen Luxury cars?</li>
+<li>What is the average age of the stolen vehicles, and does it vary
+based on the vehicle type?</li>
+<li>What is the number of thefts for different density levels?</li>
+<li>Which regions experience the most and least number of stolen
+vehicles?</li>
+</ul>
+</div>
+<div id="step-2-data-loading" class="section level2">
+<h2>Step 2: Data Loading</h2>
+<pre class="r"><code># import packages
+library(data.table)
+
+
+# import data, we use fread to get a data.table
+locations = fread(&#39;https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/locations.csv&#39;)
+locations</code></pre>
+<pre><code>##     location_id             region     country population density
+##  1:         101          Northland New Zealand    201,500   16.11
+##  2:         102           Auckland New Zealand  1,695,200  343.09
+##  3:         103            Waikato New Zealand    513,800   21.50
+##  4:         104      Bay of Plenty New Zealand    347,700   28.80
+##  5:         105           Gisborne New Zealand     52,100    6.21
+##  6:         106        Hawke&#39;s Bay New Zealand    182,700   12.92
+##  7:         107           Taranaki New Zealand    127,300   17.55
+##  8:         108 Manawatū-Whanganui New Zealand    258,200   11.62
+##  9:         109         Wellington New Zealand    543,500   67.52
+## 10:         110             Tasman New Zealand     58,700    6.10
+## 11:         111             Nelson New Zealand     54,500  129.15
+## 12:         112        Marlborough New Zealand     51,900    4.94
+## 13:         113         West Coast New Zealand     32,700    1.41
+## 14:         114         Canterbury New Zealand    655,000   14.72
+## 15:         115              Otago New Zealand    246,000    7.89
+## 16:         116          Southland New Zealand    102,400    3.28</code></pre>
+<pre class="r"><code>str(locations)</code></pre>
+<pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   16 obs. of  5 variables:
+##  $ location_id: int  101 102 103 104 105 106 107 108 109 110 ...
+##  $ region     : chr  &quot;Northland&quot; &quot;Auckland&quot; &quot;Waikato&quot; &quot;Bay of Plenty&quot; ...
+##  $ country    : chr  &quot;New Zealand&quot; &quot;New Zealand&quot; &quot;New Zealand&quot; &quot;New Zealand&quot; ...
+##  $ population : chr  &quot;201,500&quot; &quot;1,695,200&quot; &quot;513,800&quot; &quot;347,700&quot; ...
+##  $ density    : num  16.11 343.09 21.5 28.8 6.21 ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+<p>We can notice that we have 16 different locations in our data. We
+have 5 columns: 3 text type, one numerical and one integer. We can
+notice that population is text type. So we are going to change the type
+of the variable.</p>
+<pre class="r"><code>#import make details
+make_details = fread(&#39;https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/make_details.csv&#39;)
+make_details</code></pre>
+<pre><code>##      make_id     make_name make_type
+##   1:     501 Aakron Xpress  Standard
+##   2:     502          ADLY  Standard
+##   3:     503         Alpha  Standard
+##   4:     504         Anglo  Standard
+##   5:     505       Aprilia  Standard
+##  ---                                
+## 134:     634         Volvo    Luxury
+## 135:     635       Voyager  Standard
+## 136:     636        Yamaha  Standard
+## 137:     637        Zephyr  Standard
+## 138:     638          Znen  Standard</code></pre>
+<pre class="r"><code>stolen_vehicles = fread(&#39;https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/stolen_vehicles.csv&#39;)
+stolen_vehicles</code></pre>
+<pre><code>##       vehicle_id vehicle_type make_id model_year        vehicle_desc  color
+##    1:          1      Trailer     623       2021            BST2021D Silver
+##    2:          2 Boat Trailer     623       2021 OUTBACK BOATS FT470 Silver
+##    3:          3 Boat Trailer     623       2021          ASD JETSKI Silver
+##    4:          4      Trailer     623       2021             MSC 7X4 Silver
+##    5:          5      Trailer     623       2018           D-MAX 8X5 Silver
+##   ---                                                                      
+## 4549:       4549                   NA         NA                           
+## 4550:       4550                   NA         NA                           
+## 4551:       4551                   NA         NA                           
+## 4552:       4552                   NA         NA                           
+## 4553:       4553                   NA         NA                           
+##       date_stolen location_id
+##    1:     11/5/21         102
+##    2:    12/13/21         105
+##    3:     2/13/22         102
+##    4:    11/13/21         106
+##    5:     1/10/22         102
+##   ---                        
+## 4549:     2/18/22         102
+## 4550:     2/14/22         109
+## 4551:      3/9/22         102
+## 4552:      3/7/22         109
+## 4553:     3/14/22         102</code></pre>
+</div>
+<div id="step-3-data-transformation-and-loading" class="section level2">
+<h2>Step 3: Data transformation and loading</h2>
+</div>
+<div id="step-4-exploratory-data-analysis" class="section level2">
+<h2>Step 4: Exploratory Data Analysis</h2>
+</div>
+<div id="step-5-visualizations" class="section level2">
+<h2>Step 5: Visualizations</h2>
+</div>
+<div id="r-markdown" class="section level2">
+<h2>R Markdown</h2>
 <p>This is an R Markdown document. Markdown is a simple formatting
 syntax for authoring HTML, PDF, and MS Word documents. For more details
 on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
@@ -418,7 +508,6 @@ chunk like this:</p>
 ##  3rd Qu.:19.0   3rd Qu.: 56.00  
 ##  Max.   :25.0   Max.   :120.00</code></pre>
 </div>
-</div>
 <div id="including-plots" class="section level2">
 <h2>Including Plots</h2>
 <p>You can also embed plots, for example:</p>
@@ -426,7 +515,6 @@ chunk like this:</p>
 <p>Note that the <code>echo = FALSE</code> parameter was added to the
 code chunk to prevent printing of the R code that generated the
 plot.</p>
-</div>
 </div>
 
 

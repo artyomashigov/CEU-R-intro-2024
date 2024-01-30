@@ -48,3 +48,4 @@ vehicle_type_counts <- df[, .N, by = .(vehicle_type)][order(-N)]
 print(vehicle_type_counts)
 
 # visualization
+#viz1

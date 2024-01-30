@@ -226,6 +226,9 @@ For `caravan` and `trail bike` the range is big and mostly vehicles are older.
 For `moped` and `tractor` the range is pretty small and vehicles are younger.
 
 5. What is the number of thefts for different density levels?
+````{r viz5}
+
+````
 6. Which regions experience the most and least number of stolen vehicles?
 7. How does the color of vehicles affect theft rates?
 8 .What is the relationship between the population of the region and the number of vehicle thefts?

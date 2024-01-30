@@ -43,37 +43,192 @@ The analysis aims to answer several key questions:
 
 ## Step 2: Data Loading
 
+Let's load the data into RStudio. We are going to use data tables, that's why we are going 
+to use `data.table` library.
+
 ````{r loading datasets}
 # import packages
 library(data.table)
+library(ggplot2)
 
 
 # import data, we use fread to get a data.table
 locations = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/locations.csv')
 locations
 
+
 str(locations)
 ````
-We can notice that we have 16 different locations in our data. We have 5 columns: 3 text type, one numerical and one integer.
-We can notice that population is text type. So we are going to change the type of the variable.
+We can notice that we have 16 different locations in our data. We have 5 columns: 3 text type, one numerical and one integer.<br>
+We can notice that `population` is text type. So we are going to change the type of the variable.
 
 ````{r make_details}
 #import make details
 make_details = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/make_details.csv')
 make_details
+str(make_details)
+````
+We have 138 different manufacturers in our  `make_details` dataset.<br>
+The types of the fields look good and further transformation won't be needed.
 
+```` {r stolen_vehicles}
 stolen_vehicles = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/stolen_vehicles.csv')
 stolen_vehicles
+
+str(stolen_vehicles)
+````
+The dataset `stolen_vehicles` has 4553 observations.
+All fields look good, except `date_stolen` which is character type. We need to change the type of the variable in the next section of our project.
+
+
+## Step 3: Data transformation and analysis
+Let's first change the variable types for `population` and `date_stolen`.
+We are going to make `population` integer type and `date_stolen` date type and note that we will get European date format for convenience.
+```` {r datatypes}
+# Convert 'population' from character to integer
+locations$population <- as.integer(gsub(",", "", locations$population))
+
+# Convert 'date_stolen' from character to Date in the format 'dd-mm-yyyy'
+stolen_vehicles$date_stolen <- as.Date(stolen_vehicles$date_stolen, format="%m/%d/%y")
+stolen_vehicles$date_stolen <- format(stolen_vehicles$date_stolen, "%d-%m-%Y")
+
 ````
 
-## Step 3: Data transformation and loading
+Checking missing values in all 3 datasets.
+```` {r missing_values}
+# Column-wise count of missing values
+
+# In 'locations'
+sapply(locations, function(x) sum(is.na(x)))
+
+# In 'make_details'
+sapply(make_details, function(x) sum(is.na(x)))
+
+# In 'stolen_vehicles'
+sapply(stolen_vehicles, function(x) sum(is.na(x)))
+````
+
+Let's merge all 3 tables in one. The `all.x = TRUE` argument ensures that all rows from the stolen_vehicles dataset are retained in the merge, even if there's no matching row in the other datasets.
+```` {r merge}
+# Merge datasets
+df <- merge(stolen_vehicles, make_details, by = "make_id", all.x = TRUE)
+df <- merge(df, locations, by = "location_id", all.x = TRUE)
+````
+Now let's check and drop missing values from our dataset.<br>
+To do quick preview of our merged data table and look at some descriptive statistics we are going to use `summary` method.
+
+```` {r summary}
+# check missing values
+sapply(df, function(x) sum(is.na(x)))
+
+# drop missing values
+df <- na.omit(df)
+df <- df[vehicle_type != ""]
+# use summary
+summary(df)
+
+````
+The dataset provides insight into stolen vehicles in New Zealand, with the average model year of vehicles being 2005, indicating that the average age of stolen vehicles is approximately 19 years. It covers a variety of vehicle types and colors, with a comprehensive description for each vehicle.
+
+Population data for the regions where thefts occurred ranges from 52,100 to 1,695,200, with density varying significantly from 3.28 to 343.09. The dataset also includes diverse vehicle makes and types, suggesting a wide range of targeted vehicles.
+
+## Step 4: Visualizations
+Let's start answering our questions using visualizations<br>
+1. What days of the week see the highest and lowest rates of vehicle theft?
+To answer our first question we need to get weekday from `date_stolen`
+````{r viz1}
+# get weekday names
+df$week_day <- weekdays(as.Date(df$date_stolen))
+
+# build the visualization
+# Calculate the number of thefts per day of the week
+theft_counts <- df[, .(Count = .N), by = .(week_day)]
+
+# Order the days of the week
+week_days_ordered <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+theft_counts$week_day <- factor(theft_counts$week_day, levels = week_days_ordered)
+
+# Create a bar plot with ColorBrewer palette
+ggplot(theft_counts, aes(x = week_day, y = Count, fill = week_day)) +  # Map fill to week_day
+    geom_bar(stat = "identity") +
+    scale_fill_brewer(palette = "BuGn") +  # Apply ColorBrewer palette
+    geom_text(aes(label = Count), vjust = -0.3, color = "black") +  # Adding data labels
+    labs(title = "Vehicle Thefts by Day of the Week", x = "", y = "") +
+    theme_minimal() + 
+    theme(plot.title = element_text(hjust = 0.5))  # Center the title
+````
+
+<br>From the bar plot we can notice that the most theft occured on Saturday(723) and Sunday(690).
+The least number of thefts happened on Fridays(585).<br>
+
+2. Which vehicle types are most and least frequently stolen? Does this vary by region?<br>
+```` {r viz2}
+# Aggregate data: count of stolen vehicles by vehicle type
+vehicle_type_counts <- df[, .(Count = .N), by = .(vehicle_type)]
+
+# Order the vehicle types by count
+vehicle_type_counts <- vehicle_type_counts[order(-Count)]
+
+# Create a bar chart with data labels
+ggplot(vehicle_type_counts, aes(x = vehicle_type, y = Count, fill = vehicle_type)) +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label = Count), vjust = -0.3, size = 2.5) +  # Adding small data labels
+    labs(title = "Count of Thefts by Vehicle Type",
+         x = "",
+         y = "Count of Thefts") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),  # Rotate x-axis labels for readability
+          legend.position = "none") +  # Hide the legend
+    theme(plot.title = element_text(hjust = 0.5))  # Center the title
+````
+<br> We can see from our 2nd visualization that most stolen vehicle is `stationwagon`(945)
+and least stolen vehicle is `articulated truck`(1).
 
 
-## Step 4: Exploratory Data Analysis
+3. What is the percentage of stolen Luxury cars?
+```` {r viz3}
+# Calculate the count of luxury vs. non-luxury vehicles
+luxury_counts <- df[, .(Count = .N), by = .(make_type)]
 
+# Calculate the percentages
+luxury_counts[, Percentage := Count / sum(Count) * 100]
 
-## Step 5: Visualizations
+# Create a pie chart
+ggplot(luxury_counts, aes(x = 2, y = Percentage, fill = make_type)) +  # Set x to a constant value
+    geom_bar(stat = "identity", width = 0.8) +  # Set width to less than 1 for donut shape
+    coord_polar(theta = "y") +
+    labs(title = "Percentage of Stolen Luxury Cars", x = "", y = "") +
+    theme_void() +  # This removes the background, grid lines, and text labels
+    theme(legend.title = element_blank(), plot.title = element_text(hjust = 0.5)) +  # Hide the legend title and center title
+    geom_text(aes(label = sprintf("%.1f%%", Percentage)), 
+              position = position_stack(vjust = 0.5))  # Add labels
+````
+<br> We can see that the percentage of luxury cars in total is only 4.2%.
 
+4. What is the average age of the stolen vehicles, and does it vary based on the vehicle type?
+```` {r viz4}
+# Calculate the age of the vehicles
+df[, vehicle_age := 2024 - model_year]
+
+# Create a box plot of vehicle age by vehicle type
+ggplot(df, aes(x = vehicle_type, y = vehicle_age, fill = vehicle_type)) +
+    geom_boxplot() +
+    labs(title = "Average Age of Stolen Vehicles by Vehicle Type",
+         x = "",
+         y = "Age") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for readability
+          legend.position = "none") + # Hide the legend if not needed
+    theme(plot.title = element_text(hjust = 0.5))  # Center the title
+````
+<br>We can notice that the ranges are very different for different types of vehicles.<br>
+For `caravan` and `trail bike` the range is big and mostly vehicles are older.
+For `moped` and `tractor` the range is pretty small and vehicles are younger.
+
+5. What is the number of thefts for different density levels?
+6. Which regions experience the most and least number of stolen vehicles?
+7. How does the color of vehicles affect theft rates?
+8 .What is the relationship between the population of the region and the number of vehicle thefts?
 
 
 ## R Markdown

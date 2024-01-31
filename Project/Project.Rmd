@@ -38,18 +38,19 @@ The analysis aims to answer several key questions:
 - Which vehicle types are most and least frequently stolen? Does this vary by region?
 - What is the percentage of stolen Luxury cars?
 - What is the average age of the stolen vehicles, and does it vary based on the vehicle type?
-- What is the number of thefts for different density levels?
-- Which regions experience the most and least number of stolen vehicles? 
+- Which regions experience the most and least number of stolen vehicles?
+- How does the color of vehicles affect theft rates?
+- How does the population density of a region correlate with the number of stolen vehicles?
 
 ## Step 2: Data Loading
 
-Let's load the data into RStudio. We are going to use data tables, that's why we are going 
-to use `data.table` library.
+We will begin by loading the data into RStudio. For this analysis, we'll utilize `data.table`, a powerful package in R designed for efficient data manipulation and analysis. Let's start by loading the `data.table` library.
 
 ````{r loading datasets}
 # import packages
 library(data.table)
 library(ggplot2)
+
 
 
 # import data, we use fread to get a data.table
@@ -59,8 +60,7 @@ locations
 
 str(locations)
 ````
-We can notice that we have 16 different locations in our data. We have 5 columns: 3 text type, one numerical and one integer.<br>
-We can notice that `population` is text type. So we are going to change the type of the variable.
+In our dataset, there are 16 distinct locations represented, encompassing a variety of data across 5 columns. These include three text-type columns, one numerical, and one integer column.<br> Notably, the `population` field is currently classified as text. To facilitate more accurate analysis, we will proceed to convert this field to a numerical data type in the next section.
 
 ````{r make_details}
 #import make details
@@ -68,22 +68,20 @@ make_details = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intr
 make_details
 str(make_details)
 ````
-We have 138 different manufacturers in our  `make_details` dataset.<br>
-The types of the fields look good and further transformation won't be needed.
+In the `make_details` dataset we've loaded, there's information on 138 unique car manufacturers. When we check the structure of this dataset, it seems that the data types of each field are already in the format we need. This means we won't have to make any additional changes to these data types for our analysis.
 
 ```` {r stolen_vehicles}
+# import stolen vehicles
 stolen_vehicles = fread('https://raw.githubusercontent.com/artyomashigov/CEU-R-intro-2024/main/Project/Data/stolen_vehicles.csv')
 stolen_vehicles
-
 str(stolen_vehicles)
 ````
-The dataset `stolen_vehicles` has 4553 observations.
-All fields look good, except `date_stolen` which is character type. We need to change the type of the variable in the next section of our project.
+We've successfully loaded the `stolen_vehicles` dataset, which contains a total of 4553 records. A quick look at the data reveals that everything is in order, but there's one small adjustment we need to make: the `date_stolen` field is currently a character type. We'll convert this to a date type in our upcoming analysis steps, to make sure our data is just right for the analysis we plan to do.
 
 
 ## Step 3: Data transformation and analysis
-Let's first change the variable types for `population` and `date_stolen`.
-We are going to make `population` integer type and `date_stolen` date type and note that we will get European date format for convenience.
+
+Now moving to Step 3, it's time for some data transformation and analysis. Our first task is to tweak the types of two variables in our dataset. We'll transform the `population` field into an integer type for easier numerical operations. Additionally, we'll change `date_stolen` from a character type to a date type. For ease of use and consistency, we'll format `date_stolen` into the European date style. This way, our data will be neatly organized and more straightforward to work with in our analysis.
 ```` {r datatypes}
 # Convert 'population' from character to integer
 locations$population <- as.integer(gsub(",", "", locations$population))
@@ -94,10 +92,10 @@ stolen_vehicles$date_stolen <- format(stolen_vehicles$date_stolen, "%d-%m-%Y")
 
 ````
 
-Checking missing values in all 3 datasets.
+We're now going to check if there are any missing values in our three datasets: `locations`, `make_details`, and `stolen_vehicles`. This is an important step to ensure the quality and completeness of our data before diving deeper into analysis. Let's run a check on each dataset to count how many missing values (if any) exist in each column. This way, we can identify if there are any gaps in our data that need addressing.
+
 ```` {r missing_values}
 # Column-wise count of missing values
-
 # In 'locations'
 sapply(locations, function(x) sum(is.na(x)))
 
@@ -108,14 +106,15 @@ sapply(make_details, function(x) sum(is.na(x)))
 sapply(stolen_vehicles, function(x) sum(is.na(x)))
 ````
 
-Let's merge all 3 tables in one. The `all.x = TRUE` argument ensures that all rows from the stolen_vehicles dataset are retained in the merge, even if there's no matching row in the other datasets.
+Now, let's bring all our three datasets – `stolen_vehicles`, `make_details`, and `locations` – together into one comprehensive table. By using the `all.x = TRUE` option in our merge function, we'll make sure to keep every record from the stolen_vehicles dataset, even those that don't have corresponding entries in the other two datasets. This way, we won't lose any valuable information from our primary dataset during the merge process.
+
 ```` {r merge}
 # Merge datasets
 df <- merge(stolen_vehicles, make_details, by = "make_id", all.x = TRUE)
 df <- merge(df, locations, by = "location_id", all.x = TRUE)
 ````
-Now let's check and drop missing values from our dataset.<br>
-To do quick preview of our merged data table and look at some descriptive statistics we are going to use `summary` method.
+
+Next up, we're going to tidy up our merged dataset a bit. First, we'll check for any missing values and then remove them to ensure our data is clean and complete. We don’t want any gaps messing up our analysis! After that, we'll take a quick peek at our dataset to get some basic descriptive stats, and for this, we'll use the handy `summary` method. It's a great way to get an overview of our data in just a glance.
 
 ```` {r summary}
 # check missing values
@@ -126,21 +125,22 @@ df <- na.omit(df)
 df <- df[vehicle_type != ""]
 # use summary
 summary(df)
-
 ````
 The dataset provides insight into stolen vehicles in New Zealand, with the average model year of vehicles being 2005, indicating that the average age of stolen vehicles is approximately 19 years. It covers a variety of vehicle types and colors, with a comprehensive description for each vehicle.
 
 Population data for the regions where thefts occurred ranges from 52,100 to 1,695,200, with density varying significantly from 3.28 to 343.09. The dataset also includes diverse vehicle makes and types, suggesting a wide range of targeted vehicles.
 
+
 ## Step 4: Visualizations
-Let's start answering our questions using visualizations<br>
-1. What days of the week see the highest and lowest rates of vehicle theft?
-To answer our first question we need to get weekday from `date_stolen`
+
+Now, let's dive into the visual exploration of our data. We'll use various visualizations to answer some intriguing questions about vehicle thefts:
+
+1. **What days of the week see the highest and lowest rates of vehicle theft?**<br>
+To tackle this question, our first step is to extract the day of the week from the `date_stolen` field. This will allow us to analyze the frequency of thefts across different days and identify any patterns or trends.
 ````{r viz1}
 # get weekday names
 df$week_day <- weekdays(as.Date(df$date_stolen))
 
-# build the visualization
 # Calculate the number of thefts per day of the week
 theft_counts <- df[, .(Count = .N), by = .(week_day)]
 
@@ -149,7 +149,7 @@ week_days_ordered <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 theft_counts$week_day <- factor(theft_counts$week_day, levels = week_days_ordered)
 
 # Create a bar plot with ColorBrewer palette
-ggplot(theft_counts, aes(x = week_day, y = Count, fill = week_day)) +  # Map fill to week_day
+ggplot(theft_counts, aes(x = week_day, y = Count, fill = week_day)) + 
     geom_bar(stat = "identity") +
     scale_fill_brewer(palette = "BuGn") +  # Apply ColorBrewer palette
     geom_text(aes(label = Count), vjust = -0.3, color = "black") +  # Adding data labels
@@ -158,10 +158,9 @@ ggplot(theft_counts, aes(x = week_day, y = Count, fill = week_day)) +  # Map fil
     theme(plot.title = element_text(hjust = 0.5))  # Center the title
 ````
 
-<br>From the bar plot we can notice that the most theft occured on Saturday(723) and Sunday(690).
-The least number of thefts happened on Fridays(585).<br>
+<br>The bar plot vividly illustrates the weekly pattern in vehicle thefts. It's quite noticeable that the highest number of thefts occur on Saturdays (723 thefts) and Sundays (690 thefts), suggesting a weekend trend in vehicle theft incidents. On the other hand, Fridays appear to be the safest, with the lowest count of thefts at 585. This insight could be pivotal for law enforcement and public awareness strategies.<br>
 
-2. Which vehicle types are most and least frequently stolen? Does this vary by region?<br>
+2. **Which vehicle types are most and least frequently stolen? Does this vary by region?<br>**
 ```` {r viz2}
 # Aggregate data: count of stolen vehicles by vehicle type
 vehicle_type_counts <- df[, .(Count = .N), by = .(vehicle_type)]
@@ -172,20 +171,19 @@ vehicle_type_counts <- vehicle_type_counts[order(-Count)]
 # Create a bar chart with data labels
 ggplot(vehicle_type_counts, aes(x = vehicle_type, y = Count, fill = vehicle_type)) +
     geom_bar(stat = "identity") +
-    geom_text(aes(label = Count), vjust = -0.3, size = 2.5) +  # Adding small data labels
+    geom_text(aes(label = Count), vjust = -0.3, size = 2.5) +  # Adding data labels
     labs(title = "Count of Thefts by Vehicle Type",
          x = "",
-         y = "Count of Thefts") +
+         y = "") +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),  # Rotate x-axis labels for readability
-          legend.position = "none") +  # Hide the legend
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+          legend.position = "none") +
     theme(plot.title = element_text(hjust = 0.5))  # Center the title
 ````
-<br> We can see from our 2nd visualization that most stolen vehicle is `stationwagon`(945)
-and least stolen vehicle is `articulated truck`(1).
+<br> Our second bar chart provides a clear depiction of theft frequency by vehicle type. From the chart, it's evident that `station wagons` lead in theft frequency with a total of 945 incidents, highlighting their vulnerability. On the other end of the spectrum, `articulated trucks` seem to be the least targeted, with only a single reported theft. This visualization underscores the varying risks associated with different vehicle types."
 
 
-3. What is the percentage of stolen Luxury cars?
+3. **What is the percentage of stolen Luxury cars?**
 ```` {r viz3}
 # Calculate the count of luxury vs. non-luxury vehicles
 luxury_counts <- df[, .(Count = .N), by = .(make_type)]
@@ -195,17 +193,17 @@ luxury_counts[, Percentage := Count / sum(Count) * 100]
 
 # Create a pie chart
 ggplot(luxury_counts, aes(x = 2, y = Percentage, fill = make_type)) +  # Set x to a constant value
-    geom_bar(stat = "identity", width = 0.8) +  # Set width to less than 1 for donut shape
+    geom_bar(stat = "identity", width = 0.8) +
     coord_polar(theta = "y") +
     labs(title = "Percentage of Stolen Luxury Cars", x = "", y = "") +
-    theme_void() +  # This removes the background, grid lines, and text labels
-    theme(legend.title = element_blank(), plot.title = element_text(hjust = 0.5)) +  # Hide the legend title and center title
+    theme_void() +
+    theme(legend.title = element_blank(), plot.title = element_text(hjust = 0.5)) +  
     geom_text(aes(label = sprintf("%.1f%%", Percentage)), 
               position = position_stack(vjust = 0.5))  # Add labels
 ````
-<br> We can see that the percentage of luxury cars in total is only 4.2%.
+<br> The pie chart we've created offers a clear view of the stolen car make-up. Interestingly, luxury cars constitute only a small fraction of the total thefts, precisely 4.2%. This could suggest that thieves might be targeting more common vehicle types, possibly due to their prevalence or lesser security features compared to luxury cars.
 
-4. What is the average age of the stolen vehicles, and does it vary based on the vehicle type?
+4. **What is the average age of the stolen vehicles, and does it vary based on the vehicle type?**
 ```` {r viz4}
 # Calculate the age of the vehicles
 df[, vehicle_age := 2024 - model_year]
@@ -217,39 +215,80 @@ ggplot(df, aes(x = vehicle_type, y = vehicle_age, fill = vehicle_type)) +
          x = "",
          y = "Age") +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for readability
-          legend.position = "none") + # Hide the legend if not needed
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),  
+          legend.position = "none") + 
     theme(plot.title = element_text(hjust = 0.5))  # Center the title
 ````
-<br>We can notice that the ranges are very different for different types of vehicles.<br>
-For `caravan` and `trail bike` the range is big and mostly vehicles are older.
-For `moped` and `tractor` the range is pretty small and vehicles are younger.
+<br>The box plot we've generated reveals significant variations in the age range of stolen vehicles across different types. For instance, `caravans` and `trail bikes` show a broad age range, with a tendency towards older models being stolen more frequently. Conversely, `mopeds` and `tractors` have a narrower age range, indicating that newer models in these categories are more commonly targeted. This diversity in age range across vehicle types provides valuable insights into the preferences of vehicle thieves.
 
-5. What is the number of thefts for different density levels?
-````{r viz5}
+5. **Which regions experience the most and least number of stolen vehicles?**
+```` {r viz5}
+# Aggregate data: count of stolen vehicles by region
+theft_counts_by_region <- df[, .(Count = .N), by = .(region)]
 
+# Order regions by count
+theft_counts_by_region <- theft_counts_by_region[order(-Count)]
+
+# Create a bar chart of theft counts by region with data labels
+ggplot(theft_counts_by_region, aes(x = reorder(region, Count), y = Count, fill = region)) +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label = Count), vjust = -0.3, color = "black", size = 3) +  # Adding data labels
+    labs(title = "Number of Vehicle Thefts by Region",
+         x = "",
+         y = "") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "none", 
+          plot.title = element_text(hjust = 0.5))  # Center the title
 ````
-6. Which regions experience the most and least number of stolen vehicles?
-7. How does the color of vehicles affect theft rates?
-8 .What is the relationship between the population of the region and the number of vehicle thefts?
+<br>The bar chart paints a clear picture of the regional distribution of vehicle thefts. It's quite striking to see that `Auckland` tops the list with a substantial count of 1626 reported thefts.<br> In stark contrast, `Southland` reports the fewest incidents, with only 26 cases. This stark difference highlights the varying levels of vehicle theft risk across different regions.<br>
 
+6. **How does the color of vehicles affect theft rates?**
+````{r viz6}
+# Aggregate data: count of stolen vehicles by color
+theft_counts_by_color <- df[, .(Count = .N), by = .(color)]
 
-## R Markdown
+# Order colors by count
+theft_counts_by_color <- theft_counts_by_color[order(-Count)]
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Create a bar chart of theft counts by color
+ggplot(theft_counts_by_color, aes(x = reorder(color, Count), y = Count)) +
+    geom_bar(stat = "identity", fill = "darkgreen") +  
+    geom_text(aes(label = Count), vjust = -0.3, color = "black", size = 3) +  
+    labs(title = "Vehicle Theft Counts by Color",
+         x = "",
+         y = "") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),  
+          legend.position = "none",  #
+          plot.title = element_text(hjust = 0.5))  # Center the title
+````
+<br> The color 'Silver' emerges as the most targeted, with as many as 1272 vehicles stolen, closely followed by 'White' vehicles at 932 thefts. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+7. **How does the population density of a region correlate with the number of stolen vehicles?**
+```` {r viz7}
+# Aggregate data: count of stolen vehicles by region's population density
+theft_counts_by_density <- df[, .(Count = .N), by = .(density)]
 
-```{r cars}
-summary(cars)
-```
+# Create a scatter plot with a linear regression trend line
+ggplot(theft_counts_by_density, aes(x = density, y = Count)) +
+    geom_point() +  # Scatter plot
+    geom_smooth(method = "lm", se = FALSE, color = "blue") +  # Linear regression trend line
+    labs(title = "Vehicle Theft Counts by Population Density with Trend Line",
+         x = "Population Density",
+         y = "Count of Thefts") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5)) 
+````
 
-## Including Plots
+The scatter plot with an overlaid linear regression trend line reveals an intriguing pattern: there seems to be a positive correlation between a region's population density and the number of vehicle thefts. Essentially, as the population density increases, so does the frequency of stolen vehicles. This finding suggests that denser regions might be more susceptible to vehicle theft, possibly due to factors like urbanization and the sheer number of vehicles present.
 
-You can also embed plots, for example:
+## Step 5: Conclusion
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+In conclusion, this comprehensive analysis of the stolen vehicle dataset from New Zealand has provided valuable insights into the patterns and characteristics of vehicle thefts. Our investigation spanned various aspects, including the days of the week when thefts are most prevalent, the types of vehicles most at risk, the incidence of luxury vehicle thefts, the average age of stolen vehicles, and regional variations in theft frequencies.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Key findings include the higher frequency of thefts during weekends, with Saturdays experiencing the highest number of incidents. Interestingly, luxury vehicles constituted a minor proportion of thefts, indicating a possible preference for more common or less secure vehicle types among thieves. Additionally, the analysis revealed significant variations in vehicle age depending on the type, with certain types like caravans and trail bikes being older on average at the time of theft.
+
+Regional analysis showed a correlation between population density and theft frequency, suggesting that denser areas are more prone to vehicle thefts. This finding has implications for urban planning and law enforcement strategies.
+
+Overall, the insights gained from this analysis could be instrumental in shaping effective policies and preventive measures to combat vehicle theft. It also underscores the importance of data-driven approaches in understanding and addressing societal challenges. The versatility of R and its packages, particularly `data.table` and `ggplot2`, played a crucial role in facilitating this detailed analysis.
